@@ -22,14 +22,16 @@ ARGS:
 
 export interface Args {
   help: boolean;
+  version: string;
 }
 
 // deno-lint-ignore no-explicit-any
 export default async function (rawArgs: Record<string, any>): Promise<void> {
+  const version = rawArgs.V ?? rawArgs.version;
   const args: Args = {
     help: !!rawArgs.help,
+    version: typeof version === "boolean" ? "" : String(version),
   };
-  const version = typeof rawArgs._[0] === "string" ? rawArgs._[0] : null;
   if (args.help) {
     console.log(help);
     Deno.exit();
@@ -38,18 +40,18 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
     console.error(help);
     error("Too many positional arguments given.");
   }
-  if (version && !semverValid(version)) {
+  if (args.version && !semverValid(args.version)) {
     error(`The provided version is invalid.`);
   }
 
   const { latest, versions } = await getVersions().catch((err: TypeError) => {
     error(err.message);
   });
-  if (version && !versions.includes(version)) {
+  if (args.version && !versions.includes(args.version)) {
     error("The provided version is not found.");
   }
 
-  if (!version && semverGreaterThanOrEquals(VERSION, latest)) {
+  if (!args.version && semverGreaterThanOrEquals(VERSION, latest)) {
     console.log("You're using the latest version.");
     Deno.exit();
   } else {
@@ -64,7 +66,9 @@ export default async function (rawArgs: Record<string, any>): Promise<void> {
         "--allow-run",
         "--no-check",
         "-f",
-        `https://deno.land/x/deploy@${version ? version : latest}/deployctl.ts`,
+        `https://deno.land/x/deploy@${
+          args.version ? args.version : latest
+        }/deployctl.ts`,
       ],
     });
     await process.status();

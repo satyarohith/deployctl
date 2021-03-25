@@ -34,20 +34,26 @@ const args = parseArgs(Deno.args, {
   alias: {
     "help": "h",
     "reload": "r",
-    "version": "V",
   },
   boolean: [
     "check",
     "help",
     "inspect",
     "reload",
-    "version",
     "watch",
   ],
   string: [
     "addr",
     "libs",
   ],
+  unknown: (_arg, key, value) => {
+    // This is to allow version flag to be a boolean or a string when a value
+    // is provided. The flag is used by `deployctl upgrade` to accept a custom
+    // version and by `deployctl --version` to display its version.
+    if (key && key === "V" || key === "version") {
+      return value;
+    }
+  },
   default: {
     addr: ":8080",
     check: true,
@@ -70,7 +76,7 @@ switch (subcommand) {
     await upgradeSubcommand(args);
     break;
   default:
-    if (args.version) {
+    if (args.version || args.V) {
       console.log(`deployctl ${VERSION}`);
       Deno.exit(0);
     }
